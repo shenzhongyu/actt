@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/beego/beego/v2/server/web"
 	"io"
 	"log"
 	"mime/multipart"
@@ -22,20 +21,25 @@ type OssResp struct {
 var (
 	client *oss.Client
 	bucket *oss.Bucket
+	ok *OssKey
 )
 
 func init() {
 	var err error
-	EndPoint, _ := web.AppConfig.String("AliOss::Endpoint")
-	AccessKeyId, _ := web.AppConfig.String("AliOss::AccessKeyId")
-	AccessKeySecret, _ := web.AppConfig.String("AliOss::AccessKeySecret")
-	Bucket, _ :=  web.AppConfig.String("AliOss::BucketName")
-	client, err = oss.New("http://" + EndPoint, AccessKeyId, AccessKeySecret)
+	ok = &OssKey{
+		Sid: "61be7993215c413345e8268b43e57d5f",
+		EndPoint: "oss-cn-shanghai.aliyuncs.com",
+		BucketName: "pain-resources",
+	}
+	ok.buildToken()
+	ok.getKey()
+
+	client, err = oss.New("https://" + ok.EndPoint, ok.AccessKeyId, ok.AccessKeySecret)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	bucket, err = client.Bucket(Bucket)
+	bucket, err = client.Bucket(ok.BucketName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +50,7 @@ func (resp *OssResp) buildUrl(endPoint string, bucketName string) string {
 	ext := path.Ext(resp.FileName)
 	md5Path := md5.Sum([]byte(resp.FileName))
 	path := fmt.Sprintf("ATTACHED/%s/%x/%s%s", time.Now().Format("20060102"), md5Path, resp.Md5, ext)
-	resp.Url = fmt.Sprintf("http://%s.%s/%s", bucketName, endPoint, path)
+	resp.Url = fmt.Sprintf("https://%s.%s/%s", bucketName, endPoint, path)
 	return path
 }
 
@@ -61,18 +65,14 @@ func (resp *OssResp) setFileMd5(file multipart.File) {
 
 // 上传文件
 func OssFileUpload(objectKey string, reader multipart.File) (ossResp *OssResp, err error) {
-	EndPoint, _ := web.AppConfig.String("AliOss::Endpoint")
-	BucketName, _ :=  web.AppConfig.String("AliOss::BucketName")
-
 	resp := &OssResp{}
 	resp.FileName = objectKey
 	resp.setFileMd5(reader)
-	ossFile := resp.buildUrl(EndPoint, BucketName)
-
+	ossFile := resp.buildUrl(ok.EndPoint, ok.BucketName )
 	if err := bucket.PutObject(ossFile, reader); err != nil {
 		return nil, err
 	}
-
+	reader.Seek(0, 0)
 	// 获取存储空间。
 	return resp, nil
 }
@@ -88,7 +88,7 @@ func OssFileDownload() {
 }
 
 // 删除文件
-func OssFileDelete() {
+func OssFileDelete(url string) {
 
 }
 

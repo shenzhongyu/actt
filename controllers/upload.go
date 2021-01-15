@@ -4,6 +4,7 @@ import (
 	"actt/models"
 	beego "github.com/beego/beego/v2/server/web"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 )
@@ -38,40 +39,46 @@ func (u *UploadController) Post() {
 		return
 	}
 
-	resps := make([]models.OssResp, len(files))
+	res := make(chan models.OssResp, len(files))
+	resp := make([]models.OssResp, len(files))
 
 	for i, _ := range files {
-		//for each fileheader, get a handle to the actual file
-		file, err := files[i].Open()
-		defer file.Close()
-		if err != nil {
-			http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
-			return
-		}
 
-		resp, err := models.OssFileUpload(files[i].Filename, file)
-		if err != nil {
-			http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusBadRequest)
-		}
+		go func(n int, files []*multipart.FileHeader, res chan<- models.OssResp) {
+			file, err := files[i].Open()
+			defer file.Close()
+			if err != nil {
+				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-		resps[i] = *resp
+			resp, err := models.OssFileUpload(files[i].Filename, file)
+			if err != nil {
+				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusBadRequest)
+			}
+			res <- *resp
 
-		//create destination file making sure the path is writeable.
-		dst, err := os.Create("upload/" + resp.FileName)
-		defer dst.Close()
-		if err != nil {
-			http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		//copy the uploaded file to the destination file
-		if _, err := io.Copy(dst, file); err != nil {
-			http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
-			return
-		}
+			//create destination file making sure the path is writeable.
+			dst, err := os.Create("upload/" + files[n].Filename)
+			defer dst.Close()
+			if err != nil {
+				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			//copy the uploaded file to the destination file
+			if _, err := io.Copy(dst, file); err != nil {
+				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+		} (i, files, res)
+
+		resp[i] = <-res
 	}
 
-	u.Data["json"] = resps
+	u.Data["json"] = resp
 	u.ServeJSON()
 }
+
 
 
