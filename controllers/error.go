@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"github.com/beego/beego/v2/server/web"
+	"github.com/astaxie/beego"
 )
 
 type ErrorController struct {
-	web.Controller
+	beego.Controller
 }
 
 

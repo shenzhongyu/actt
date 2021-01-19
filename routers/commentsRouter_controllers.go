@@ -1,8 +1,8 @@
 package routers
 
 import (
-	beego "github.com/beego/beego/v2/server/web"
-	"github.com/beego/beego/v2/server/web/context/param"
+	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/context/param"
 )
 
 func init() {

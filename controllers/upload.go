@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"actt/models"
-	beego "github.com/beego/beego/v2/server/web"
+	"github.com/astaxie/beego"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -20,7 +20,7 @@ type UploadController struct {
 // @Failure 403 body is empty
 // @router / [get]
 func (u *UploadController) GetAll() {
-	u.Data["json"],_ = beego.AppConfig.String("AliOss::AccessKeyId")
+	u.Data["json"] = "v1/upload/"
 	u.ServeJSON()
 }
 
@@ -31,9 +31,7 @@ func (u *UploadController) GetAll() {
 // @Failure 403 body is empty
 // @router / [post]
 func (u *UploadController) Post() {
-	u.Ctx.Output.Header("Access-Control-Allow-Origin", "*")
 	files, err:=u.GetFiles("files[]")
-
 	if err != nil {
 		http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusNoContent)
 		return
@@ -79,6 +77,7 @@ func (u *UploadController) Post() {
 	u.Data["json"] = resp
 	u.ServeJSON()
 }
+
 
 
 
