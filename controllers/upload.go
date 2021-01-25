@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
 )
 
 type UploadController struct {
@@ -31,6 +32,7 @@ func (u *UploadController) GetAll() {
 // @Failure 403 body is empty
 // @router / [post]
 func (u *UploadController) Post() {
+	time.Sleep(time.Second * 15)
 	files, err:=u.GetFiles("files[]")
 	if err != nil {
 		http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusNoContent)

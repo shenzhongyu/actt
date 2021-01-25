@@ -14,6 +14,11 @@ import (
 
 func init() {
 	ns := beego.NewNamespace("/v1",
+		beego.NSNamespace("/reportsource",
+			beego.NSInclude(
+				&controllers.ActtController{},
+			),
+		),
 		beego.NSNamespace("/upload",
 			beego.NSInclude(
 				&controllers.UploadController{},
