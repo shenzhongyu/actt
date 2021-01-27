@@ -16,7 +16,7 @@ func main() {
 
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
 		//允许访问所有源
-		AllowOrigins: []string{"*"},
+		AllowOrigins: []string{"http://actt.medtmt.cn", "http://mactt.medtmt.cn"},
 		//可选参数"GET", "POST", "PUT", "DELETE", "OPTIONS" (*为所有)
 		//其中Options跨域复杂请求预检
 		AllowMethods:   []string{"*"},

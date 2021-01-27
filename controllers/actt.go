@@ -16,7 +16,7 @@ type ActtController struct {
 // @Failure 403 body is empty
 // @router /painparts [get]
 func (u *ActtController) PainParts() {
-	req := httplib.Get(beego.AppConfig.String("acttapi"))
+	req := httplib.Get(beego.AppConfig.String("acttapi") + "reportsource/painparts")
 	req.Param("id", u.GetString("id"))
 	req.Param("format", u.GetString("format"))
 	switch u.GetString("format") {
@@ -34,3 +34,31 @@ func (u *ActtController) PainParts() {
 		break
 	}
 }
+
+
+// @Title ReportSource PainChecks
+// @Description 获取疼痛检测项JSON数据
+// @Param	id=default		format=json 	"获取疼痛检测项JSON数据"
+// @Success 200 json or xml
+// @Failure 403 body is empty
+// @router /painchecks [get]
+func(u *ActtController) PainChecks() {
+	req := httplib.Get(beego.AppConfig.String("acttapi") + "reportsource/painchecks")
+	req.Param("id", u.GetString("id"))
+	req.Param("format", u.GetString("format"))
+	switch u.GetString("format") {
+	case "json":
+		var result interface{}
+		if err := req.ToJSON(&result); err != nil{
+			u.Abort("500 " + err.Error())
+		}
+		u.Data["json"] = result
+		u.ServeJSON()
+	default:
+		str, _ := req.String()
+		u.Ctx.WriteString(str)
+		break
+	}
+
+}
+

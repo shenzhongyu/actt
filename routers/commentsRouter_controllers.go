@@ -9,6 +9,15 @@ func init() {
 
     beego.GlobalControllerRouter["actt/controllers:ActtController"] = append(beego.GlobalControllerRouter["actt/controllers:ActtController"],
         beego.ControllerComments{
+            Method: "PainChecks",
+            Router: "/painchecks",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["actt/controllers:ActtController"] = append(beego.GlobalControllerRouter["actt/controllers:ActtController"],
+        beego.ControllerComments{
             Method: "PainParts",
             Router: "/painparts",
             AllowHTTPMethods: []string{"get"},
