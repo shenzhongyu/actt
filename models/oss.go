@@ -2,10 +2,10 @@ package models
 
 import (
 	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"path"
@@ -55,11 +55,9 @@ func (resp *OssResp) buildUrl(endPoint string, bucketName string) string {
 }
 
 func (resp *OssResp) setFileMd5(file multipart.File) {
-	f := md5.New()
-	io.Copy(f, file)
-	fMd5 := f.Sum([]byte(""))
-	file.Seek(0, 0)
-	resp.Md5 = hex.EncodeToString(fMd5[:])
+	body, _ := ioutil.ReadAll(file)
+	file.Seek(0, io.SeekStart)
+	resp.Md5 = fmt.Sprintf("%x", md5.Sum(body))
 }
 
 
