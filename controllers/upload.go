@@ -3,10 +3,7 @@ package controllers
 import (
 	"actt/models"
 	"github.com/astaxie/beego"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
 )
 
 type UploadController struct {
@@ -31,48 +28,21 @@ func (u *UploadController) GetAll() {
 // @Failure 403 body is empty
 // @router / [post]
 func (u *UploadController) Post() {
-	files, err:=u.GetFiles("files[]")
+	f, h, err := u.GetFile("files[]")
 	if err != nil {
 		http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusNoContent)
 		return
 	}
+	defer f.Close()
 
-	res := make(chan models.OssResp, len(files))
-	resp := make([]models.OssResp, len(files))
-
-	for i, _ := range files {
-
-		go func(n int, files []*multipart.FileHeader, res chan<- models.OssResp) {
-			file, err := files[i].Open()
-			defer file.Close()
-			if err != nil {
-				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			resp, err := models.OssFileUpload(files[i].Filename, file)
-			if err != nil {
-				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusBadRequest)
-			}
-			res <- *resp
-
-			//create destination file making sure the path is writeable.
-			dst, err := os.Create("upload/" + files[n].Filename)
-			defer dst.Close()
-			if err != nil {
-				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			//copy the uploaded file to the destination file
-			if _, err := io.Copy(dst, file); err != nil {
-				http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-		} (i, files, res)
-
-		resp[i] = <-res
+	resp := make([]*models.OssResp, 1)
+	resp[0], err = models.OssFileUpload(f, h)
+	if err != nil {
+		http.Error(u.Ctx.ResponseWriter, err.Error(), http.StatusBadRequest)
+        return
 	}
+
+	u.SaveToFile("files[]", "upload/" + h.Filename)
 
 	u.Data["json"] = resp
 	u.ServeJSON()

@@ -2,10 +2,10 @@ package models
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"path"
@@ -16,6 +16,7 @@ type OssResp struct {
 	Url 		string			`json:"url"`
 	Md5 		string			`json:"md5"`
 	FileName	string			`json:"filename"`
+	contentMd5  string
 }
 
 var (
@@ -55,22 +56,29 @@ func (resp *OssResp) buildUrl(endPoint string, bucketName string) string {
 }
 
 func (resp *OssResp) setFileMd5(file multipart.File) {
-	body, _ := ioutil.ReadAll(file)
+	h := md5.New()
+	io.Copy(h, file)
+	resp.contentMd5 = base64.StdEncoding.EncodeToString(h.Sum(nil))
+	resp.Md5 = fmt.Sprintf("%x", h.Sum(nil))
 	file.Seek(0, io.SeekStart)
-	resp.Md5 = fmt.Sprintf("%x", md5.Sum(body))
 }
 
 
 // 上传文件
-func OssFileUpload(objectKey string, reader multipart.File) (ossResp *OssResp, err error) {
+func OssFileUpload(file multipart.File, fileHeader *multipart.FileHeader) (ossResp *OssResp, err error) {
 	resp := &OssResp{}
-	resp.FileName = objectKey
-	resp.setFileMd5(reader)
+	resp.FileName = fileHeader.Filename
+	resp.setFileMd5(file)
+	resp.buildUrl(ok.EndPoint, ok.BucketName )
+
 	ossFile := resp.buildUrl(ok.EndPoint, ok.BucketName )
-	if err := bucket.PutObject(ossFile, reader); err != nil {
+	contentEncoding := oss.ContentEncoding("UTF-8")
+	contentMd5 := oss.ContentMD5(resp.contentMd5)
+	contentLength := oss.ContentLength(fileHeader.Size)
+	if err := bucket.PutObject(ossFile, file, contentEncoding, contentMd5, contentLength); err != nil {
 		return nil, err
 	}
-	reader.Seek(0, 0)
+
 	// 获取存储空间。
 	return resp, nil
 }
